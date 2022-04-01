@@ -1,5 +1,5 @@
-#include <Arduino.h>
-#include <Wire.h>
+#include <mbed.h>
+#include <cstdint>
 
 #ifndef _GROVE_TWO_RGB_LED_MATRIX_H_
 #define _GROVE_TWO_RGB_LED_MATRIX_H_
@@ -77,17 +77,17 @@ class GroveTwoRGBLedMatrixClass {
     // * Return
     // *    Null.
     // *************************************************************/
-    GroveTwoRGBLedMatrixClass() {
-        currentDeviceAddress = GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR;
+    GroveTwoRGBLedMatrixClass(PinName sda, PinName scl): i2c(sda, scl) {
+        currentDeviceAddress = GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR<<1; //mbed 
     }
-    GroveTwoRGBLedMatrixClass(uint8_t screenNumber) {
+    GroveTwoRGBLedMatrixClass(PinName sda, PinName scl,uint8_t screenNumber): i2c(sda, scl) {
         if (!(screenNumber >= 1 && screenNumber <= 16)) {
             screenNumber = 1;
         }
         offsetAddress = screenNumber - 1;
-        currentDeviceAddress = GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR + offsetAddress;
+        currentDeviceAddress = (GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR + offsetAddress)<<1; //mbed
     }
-    GroveTwoRGBLedMatrixClass(uint8_t base, uint8_t screenNumber) {
+    GroveTwoRGBLedMatrixClass(PinName sda, PinName scl,uint8_t base, uint8_t screenNumber): i2c(sda, scl) {
         if (!(screenNumber >= 1 && screenNumber <= 16)) {
             screenNumber = 1;
         }
@@ -96,11 +96,8 @@ class GroveTwoRGBLedMatrixClass {
         }
         offsetAddress = screenNumber - 1;
         baseAddress = base;
-        currentDeviceAddress = offsetAddress + baseAddress;
+        currentDeviceAddress = (offsetAddress + baseAddress)<<1; //mbed
     }
-
-
-  public:
 
     // /*************************************************************
     // * Description
@@ -474,12 +471,17 @@ class GroveTwoRGBLedMatrixClass {
     // *************************************************************/
     void getDeviceId(void);
 
-
+ private :
+    void i2cSendByte(uint8_t address, uint8_t data);
+    void i2cSendBytes(uint8_t address, uint8_t* data, uint8_t len) ;
+    void i2cSendContinueBytes(uint8_t address, uint8_t* data, uint8_t len);
+    void i2cReceiveBytes(uint8_t address, uint8_t* data, uint8_t len);
     uint8_t currentDeviceAddress;
     uint8_t offsetAddress;
     uint8_t baseAddress;
 
     uint32_t deviceId[3]; // Unique device ID(96 bits: Low, Middle, High)
+    I2C i2c;
 
 };
 
