@@ -1,37 +1,31 @@
 
 #include "grove_two_rgb_led_matrix.h"
+#include <cstdint>
 
 
-void i2cSendByte(uint8_t address, uint8_t data) {
+inline void GroveTwoRGBLedMatrixClass::i2cSendByte(uint8_t address, uint8_t data) {
 
-    Wire.beginTransmission(address);
-    Wire.write(data);
-    Wire.endTransmission();
+    char dta[1] = {data};
+    i2c.write(address, dta, 1);
 }
-void i2cSendBytes(uint8_t address, uint8_t* data, uint8_t len) {
+inline void GroveTwoRGBLedMatrixClass::i2cSendBytes(uint8_t address, uint8_t* data, uint8_t len) {
 
-    Wire.beginTransmission(address);
-    Wire.write(data, len);
-    Wire.endTransmission();
+    i2c.write(address, (char*)data, len);
 }
-void i2cSendContinueBytes(uint8_t address, uint8_t* data, uint8_t len) {
+inline void GroveTwoRGBLedMatrixClass::i2cSendContinueBytes(uint8_t address, uint8_t* data, uint8_t len) {
     uint8_t cbytes = I2C_CMD_CONTINUE_DATA;
-
-    Wire.beginTransmission(address);
-    Wire.write(&cbytes, 1);
-    Wire.write(data, len);
-    Wire.endTransmission();
+    uint8_t arr[len + 1];
+    arr[0]=cbytes;
+    for(int i=0;i<len;i++)
+        arr[i+1]=data[i];
+    i2c.write(address, (char*)arr, len+1);
 }
 
 
-void i2cReceiveBytes(uint8_t address, uint8_t* data, uint8_t len) {
-    uint8_t i = 0;
+void GroveTwoRGBLedMatrixClass::i2cReceiveBytes(uint8_t address, uint8_t* data, uint8_t len) {
 
+    i2c.read(address, (char*) data, len);
 
-    Wire.requestFrom(address, len);
-    while (Wire.available()) {
-        data[i ++] = Wire.read();
-    }
 }
 
 
@@ -67,7 +61,7 @@ void GroveTwoRGBLedMatrixClass::changeDeviceBaseAddress(uint8_t newAddress) {
     i2cSendBytes(currentDeviceAddress, data, 2);
 
     currentDeviceAddress = baseAddress + offsetAddress;
-    delay(200);
+    thread_sleep_for(200);
 }
 
 void GroveTwoRGBLedMatrixClass::defaultDeviceAddress(void) {
@@ -75,7 +69,7 @@ void GroveTwoRGBLedMatrixClass::defaultDeviceAddress(void) {
 
     baseAddress = GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR;
     currentDeviceAddress = baseAddress + offsetAddress;
-    delay(200);
+    thread_sleep_for(200);
 }
 
 void GroveTwoRGBLedMatrixClass::turnOnLedFlash(void) {
@@ -92,7 +86,7 @@ void GroveTwoRGBLedMatrixClass::enableAutoSleep(void) {
 
 void GroveTwoRGBLedMatrixClass::wakeDevice(void) {
 
-    delayMicroseconds(200);
+    wait_us(200);
 }
 
 void GroveTwoRGBLedMatrixClass::disableAutoSleep(void) {
@@ -195,7 +189,7 @@ void GroveTwoRGBLedMatrixClass::displayString(char* str, uint16_t duration_time,
 
     if (len > 25) {
         i2cSendBytes(currentDeviceAddress, data, 31);
-        delay(1);
+        thread_sleep_for(1);
         i2cSendContinueBytes(currentDeviceAddress, data + 31, (len - 25));
     } else {
         i2cSendBytes(currentDeviceAddress, data, (len + 6));
@@ -231,9 +225,9 @@ void GroveTwoRGBLedMatrixClass::displayFrames(uint8_t* buffer, uint16_t duration
             data[3] = forever_flag;
         }
         i2cSendBytes(currentDeviceAddress, data, 24);
-        delay(1);
+        thread_sleep_for(1);
         i2cSendContinueBytes(currentDeviceAddress, data + 24, 24);
-        delay(1);
+        thread_sleep_for(1);
         i2cSendContinueBytes(currentDeviceAddress, data + 48, 24);
     }
 }
@@ -270,9 +264,9 @@ void GroveTwoRGBLedMatrixClass::displayFrames(uint64_t* buffer, uint16_t duratio
             data[3] = forever_flag;
         }
         i2cSendBytes(currentDeviceAddress, data, 24);
-        delay(1);
+        thread_sleep_for(1);
         i2cSendContinueBytes(currentDeviceAddress, data + 24, 24);
-        delay(1);
+        thread_sleep_for(1);
         i2cSendContinueBytes(currentDeviceAddress, data + 48, 24);
     }
 }
@@ -283,12 +277,12 @@ void GroveTwoRGBLedMatrixClass::stopDisplay(void) {
 
 void GroveTwoRGBLedMatrixClass::storeFrames(void) {
     i2cSendByte(currentDeviceAddress, I2C_CMD_STORE_FLASH);
-    delay(200);
+    thread_sleep_for(200);
 }
 
 void GroveTwoRGBLedMatrixClass::deleteFrames(void) {
     i2cSendByte(currentDeviceAddress, I2C_CMD_DELETE_FLASH);
-    delay(200);
+    thread_sleep_for(200);
 }
 
 
@@ -324,7 +318,7 @@ void GroveTwoRGBLedMatrixClass::displayFramesFromFlash(uint16_t duration_time, b
     data[5] = to - 1;
 
     i2cSendBytes(currentDeviceAddress, data, 6);
-    delay(200);
+    thread_sleep_for(200);
 }
 
 void GroveTwoRGBLedMatrixClass::displayColorBlock(uint32_t rgb, uint16_t duration_time, bool forever_flag) {
